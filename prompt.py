@@ -8,8 +8,12 @@ print("Hello!")
 print("I am interpreting this file: " + sys.executable)
 print("Here is the full file path of this file being run: " + __file__)
 
-data_file_path = r"data/data_file.json"
-print("This is a data file path: " + data_file_path)
+#prepend with r to indicate raw file path?
+json_data_dir = "data/"
+json_data_file = "data.json"
+full_data_file_path = os.path.join(json_data_dir, json_data_file)
+print(full_data_file_path)
+# print("This is a data file path: " + data_file_path)
 def exit_program():
     print("Goodbye!")
     exit()
@@ -17,7 +21,6 @@ def exit_program():
 def main():
     print("=" * 80)
     user_input = input("Type 'help' for the help menu or 'exit' to exit program: ")
-# https://www.freecodecamp.org/news/python-switch-statement-switch-case-example/
     match user_input:
         case "exit":
             exit_program()
@@ -33,6 +36,12 @@ def main():
             write_json_file()
         case "show":
             show_existing_data()
+        case "compare":
+            compare_stack_to_file()
+        case "validate":
+            validate_file(full_data_file_path)
+        case "json":
+            try_json2(full_data_file_path)
 
 def help_menu():
     print("Help Menu:")
@@ -44,7 +53,6 @@ def help_menu():
     print("finalize - add stack to json file")
     print("show - show existing data in json file")
 
-#https://stackoverflow.com/questions/11637293/iterate-over-object-attributes-in-python
 class HumanPerson:
     def __init__(self, firstname, lastname, age):
         self.firstname = firstname
@@ -72,7 +80,6 @@ def create_person():
     # print(dir(x))
     #print(vars(x))
     print(new_person.__dict__)
-#https://www.edureka.co/community/31967/how-to-print-objects-of-class-using-print-function-in-python
 
     next_action = input("Is this correct? Enter y to create, n to edit (only one edit is supported) or x to cancel: ")
     match next_action:
@@ -95,15 +102,61 @@ def drop_stack():
     for item in people_dict:
         print(item)
 
+def try_json(*args):
+    try:
+        json.load(args[0])
+    except ValueError as e:
+        return False
+    return True
+
+def try_json2(*args):
+    try:
+        json.load(args[0])
+    except ValueError as e:
+        print("Bad json")
+    print ("Good json")
+
+# Accepts a file path, and either 1 to confirm the file is not empty or 0 to skip it
+def validate_file(*args):
+    is_valid = False
+    is_valid = True if os.path.exists(args[0]) else False
+    if(args[1]):
+        file = open(args[0], "r")
+        file_contents = file.read()
+        is_valid = True if file_contents != "" else False
+    return is_valid
+
 def show_existing_data():
 # TODO: figure out how to variablize the file path
-    if(os.path.exists(data_file_path)):
+    if(validate_file(full_data_file_path, 1)):
     #Can also incorporate f = open("myfile.txt", "x/w/a")
-        with open(data_file_path, "r") as data_file:
-            data_jsonized = json.load(data_file)
-            print("Printing contents of existing data file")
-            print(data_jsonized)
+    #'with open' closes the file for you at the end of the block
+    #'r' for read is the default, but you can also make it explicit
+        with open(f"{full_data_file_path}", "r") as data_file:
+        #json.loads gets very unhappy if passed non-json
+            if(try_json(data_file)):
+                #Otherwise use json.loads(data_file.read())
+                data_dejsonized = json.load(data_file)
+                print("Printing contents of existing data file")
+                print(data_dejsonized)
+            else:
+                print(f"{full_data_file_path} does not contain valid JSON")
+    else:
+        print("File " + full_data_file_path + " does not exist or is empty.")
 
+def write_json_file():
+    if(validate_file(full_data_file_path, 0)):
+        with open(f"{full_data_file_path}", "w") as data_file:
+            data_to_write = json.dumps(people_dict)
+            if(data_to_write != "{}"):
+                # with open(f"{full_data_file_path}", "w") as data_file_write:
+                print("Writing stack to file:")
+                print(data_to_write)
+                json.dump(people_dict, data_file)
+            else:
+                print("Stack is empty, add some objects to write to data file")
+    else:
+        print(f"{full_data_file_path} does not exist")
 
 # This feels a bit redundant with the exit_program() function
 status_running = True
